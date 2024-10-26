@@ -7,8 +7,7 @@ part 'tables.g.dart';
 // #docregion simple_schema
 class TodoItems extends Table {
   IntColumn get id => integer().autoIncrement()(); // (1)!
-  TextColumn get title => text().withLength(min: 6, max: 32)();
-  TextColumn get content => text().named('body')();
+  TextColumn get title => text()();
   IntColumn get category =>
       integer().nullable().references(TodoCategory, #id)();
   DateTimeColumn get createdAt => dateTime().nullable()(); // (2)!
@@ -227,6 +226,11 @@ class Orders extends Table {
 }
 // #enddocregion indexsql
 
-// #docregion references
+// #docregion strict
+class Preferences extends Table {
+  TextColumn get key => text()();
 
-// #enddocregion references
+  @override
+  bool get isStrict => true;
+}
+// #enddocregion strict
