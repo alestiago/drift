@@ -1,3 +1,8 @@
+## 0.39.2
+
+- Fix false-positive lint for a parameter count mismatch on `bm25()`.
+- Fix type interference around `fts5` function calls.
+
 ## 0.39.1
 
 - Improve recovery in parser when encountering syntax errors.

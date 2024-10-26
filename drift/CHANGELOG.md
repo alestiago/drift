@@ -1,3 +1,8 @@
+## 2.22.0
+
+- Add `sqliteAny()` method to tables to declare `ANY` columns.
+- Add missing parentheses around adjacent expressions of the same precedence.
+
 ## 2.21.0
 
 - To infer whether serialization is required for inter-isolate communication,

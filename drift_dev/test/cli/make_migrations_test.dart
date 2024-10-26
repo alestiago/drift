@@ -65,7 +65,13 @@ targets:
             true);
         // Test files should be created
         await d.dir('app/test/drift/my_database', [
-          d.file('migration_test.dart', IsValidDartFile(anything)),
+          d.file(
+            'migration_test.dart',
+            allOf(
+              IsValidDartFile(anything),
+              contains('final db = MyDatabase(schema.newConnection())'),
+            ),
+          ),
           d.file('generated/schema.dart', IsValidDartFile(anything)),
           d.file('generated/schema_v1.dart', IsValidDartFile(anything)),
           d.file('generated/schema_v2.dart', IsValidDartFile(anything)),
