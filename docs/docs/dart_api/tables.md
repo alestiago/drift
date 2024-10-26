@@ -89,6 +89,7 @@ Drift offers a variety of built-in column types to suit most database needs.
 | `Uint8List`                      | `late final image = blob()()`         | `BLOB`                                                  |
 | `DriftAny`                       | `late final value = sqliteAny()()`    | `ANY` (for `STRICT` tables)                             |
 | `DateTime` (see [options](#datetime-options))  | `late final createdAt = dateTime()()` | `INTEGER`or `TEXT` [More details...](#datetime-options) |
+| Your own! | Any with [type converters](../type_converters.md). | Depending on type converter. |
 | Types specific to Postgres | See [postgres docs](../Platforms/postgres.md). | Depending on type. |
 
 In addition to these basic types, columns can be configured to store any type which can be converted to a built-in type. See [type converters](../type_converters.md) for more information.
@@ -295,7 +296,7 @@ same day.
 ## Indexes
 
 When a column that isn't a primary or unique is frequently used as a filter in a
-`where` clause, indexes can be used to speed up these queries.
+`where` clause, [indexes](https://sqlite.org/lang_createindex.html) can be used to speed up these queries.
 This is particularly true for large tables: Without an index, database engines
 essentially have to loop through every row to find the ones matching your where clause.
 For each index, a lookup structure mapping the index value to matching rows is created
@@ -371,6 +372,12 @@ SQLite supports a notion of ["strict"](https://www.sqlite.org/stricttables.html)
 stringent type checking rules are applied to columns.
 Drift does not currently enable this option by default, but might choose to do in a future major version.
 
+Drift-defined tables can be made strict by overriding the `isStrict` getter:
+
+{{ load_snippet('strict','lib/snippets/dart_api/tables.dart.excerpt.json') }}
+
+Similarly, [`WITHOUT ROWID`](https://www.sqlite.org/withoutrowid.html) tables can be created by overriding
+the `withoutRowId` getter.
 
 ## Advanced schema options
 

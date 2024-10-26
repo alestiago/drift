@@ -229,6 +229,10 @@ class Orders extends Table {
 // #docregion strict
 class Preferences extends Table {
   TextColumn get key => text()();
+  AnyColumn get value => sqliteAny().nullable()();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {key};
 
   @override
   bool get isStrict => true;
