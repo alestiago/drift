@@ -31,14 +31,14 @@ example:
     late final id = integer(); // Bad
     late final id = integer()(); // Good
     ```
-2. Drift adopts the choice from Dart's type system to make columns non-nullable by default. Using `nullable()` allows storing `null` values.
+2. Columns are non-nullable by default. Using `nullable()` allows storing `null` values.
 
-This defines two tables: `todo_items`, with columns `id`, `title`, `category` and `created_at`; and `todo_category`, with columns `id` and `description`.
-When running code generation, Drift analyzes these table classes to figure out what data they describe.
-This allows Drift to generate `CREEATE TABLE` statements for the database:
+This defines two tables: `todo_items` with columns `id`, `title`, `category`, and `created_at`; and `todo_category` with columns `id` and `description`. 
+
+The SQL equivalent of these tables would be:
 
 ```sql
-CREATE TABLE todo_category(
+CREATE TABLE todo_categories (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   description TEXT NOT NULL
 );
@@ -46,32 +46,34 @@ CREATE TABLE todo_category(
 CREATE TABLE todo_items (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   title TEXT,
-  category INTEGER REFERENCES todo_category(id),
-  created_at TEXT
+  category INTEGER NOT NULL REFERENCES todo_category(id),
+  created_at INTEGER -- (1)!
 );
 ```
+{.annotate }
 
-Note how the structure of the Dart class matches the created SQL statement.
+1. By default, `dateTime()` columns are stored as Unix timestamps. To store them as ISO-8601 strings, see [DateTime options](#datetime-options).
+
 Some technical notes:
 
 - The name of the table, `todo_items` is automatically derived from the class name. This can be customized by overriding the `tableName` getter. See [Table Names](#table-name) for more information.
 - The `id` column is automatically set as the primary key because it is an auto-incrementing integer. See [Primary Keys](#primary-keys) for more information.
 
-## Adding tables
+## Add to database
 
 Add tables to your database by adding them to `@DriftDatabase` annotation.
 
 {{ load_snippet('simple_schema_db','lib/snippets/dart_api/tables.dart.excerpt.json') }}
 
-When you add a new table, you must re-run the code generator:
+When you add a new table, you must run the code generator again:
 
 ```bash
 dart run build_runner build
 ```
+Drift initializes a brand-new database with all defined tables when the database is opened for the first time. (typically when running the app for the first time)
 
-When a database is first opened (typically when running the app for the first time),
-Drift initializes a brand-new database with all defined tables. However, if a database already exists, Drift won't make any automatic changes to its structure. Please see [migrations](../Migrations/index.md) for an overview of what to do
-when changing the database like this.
+However, if a database already exists, Drift won't make any automatic changes to its structure. Please see [migrations](../Migrations/index.md) for an overview of what to do when changing the database like this.
+
 
 ## Column types
 
@@ -79,18 +81,18 @@ Each column in a table has a fixed type describing the values it can store.
 Drift offers a variety of built-in column types to suit most database needs.
 
 
-| Dart Type                        | Drift Column                          | SQL Type[^1]                                            |
-| -------------------------------- | ------------------------------------- | ------------------------------------------------------- |
-| `int`                            | `late final age = integer()()`        | `INTEGER`                                               |
-| `BigInt` (as 64-bit, see [why](#when-to-use-bigint-and-int64)) | `late final age = int64()()`          | `INTEGER`                                               |
-| `String`                         | `late final name = text()()`          | `TEXT`                                                  |
-| `bool`                           | `late final isAdmin = boolean()()`    | `INTEGER` (`1` or `0`)                                  |
-| `double`                         | `late final height = real()()`        | `REAL`                                                  |
-| `Uint8List`                      | `late final image = blob()()`         | `BLOB`                                                  |
-| `DriftAny`                       | `late final value = sqliteAny()()`    | `ANY` (for `STRICT` tables)                             |
-| `DateTime` (see [options](#datetime-options))  | `late final createdAt = dateTime()()` | `INTEGER`or `TEXT` [More details...](#datetime-options) |
-| Your own! | Any with [type converters](../type_converters.md). | Depending on type converter. |
-| Types specific to Postgres | See [postgres docs](../Platforms/postgres.md). | Depending on type. |
+| Dart Type                                                      | Drift Column                                      | SQL Type[^1]                |
+| -------------------------------------------------------------- | ------------------------------------------------- | --------------------------- |
+| `int`                                                          | `late final age = integer()()`                    | `INTEGER`                   |
+| `BigInt` (as 64-bit, see [why](#when-to-use-bigint-and-int64)) | `late final age = int64()()`                      | `INTEGER`                   |
+| `String`                                                       | `late final name = text()()`                      | `TEXT`                      |
+| `bool`                                                         | `late final isAdmin = boolean()()`                | `INTEGER` (`1` or `0`)      |
+| `double`                                                       | `late final height = real()()`                    | `REAL`                      |
+| `Uint8List`                                                    | `late final image = blob()()`                     | `BLOB`                      |
+| `DriftAny`                                                     | `late final value = sqliteAny()()`                | `ANY` (for `STRICT` tables) |
+| `DateTime` (see [options](#datetime-options))                  | `late final createdAt = dateTime()()`             | `INTEGER`or `TEXT`          |
+| Your own :exploding_head:                                      | See [type converter docs](../type_converters.md). | Depending on type.          |
+| Postgres Types                                                 | See [postgres docs](../Platforms/postgres.md).    | Depending on type.          |
 
 In addition to these basic types, columns can be configured to store any type which can be converted to a built-in type. See [type converters](../type_converters.md) for more information.
 
@@ -98,36 +100,28 @@ In addition to these basic types, columns can be configured to store any type wh
 
 ## Primary keys
 
-Every table in a database should have a primary key - a column or set of columns that uniquely identify each row.
+Every table in a database should have a primary key - a column or set of columns which uniquely identify each row.
 
 #### Single auto-incrementing key
 
-For most tables that don't have a primary key derived from their data, an additional column that serves
-as an identifier for the row can be used as a primary key.
+For most tables, a single auto-incrementing integer column is sufficient as the primary key.
 
 With Drift, these columns are declared by using `autoIncrement()` in the definition of a column, which will:
 
-1. Make that column the sole primary-key of the table
-   (thus, you can't use `autoIncrement()` on multiple columns, or mix
-   `autoIncrement()` and other [primary keys](#primary-keys)).
-2. Instruct the database to use an incrementing sequence as a default
-   value for this column.
+<div class="annotate" markdown>
+1. Make that column the sole primary-key of the table.  (1)
+2. Make this column automatically count up by 1 for each new row.
+</div>
+
+1. Thus, you can't use `autoIncrement()` on multiple columns, or mix
+   `autoIncrement()` and other [primary keys](#primary-keys)
 
 For example, when declaring a table with an auto-incrementing column:
 
 {{ load_snippet('autoIncrement','lib/snippets/dart_api/tables.dart.excerpt.json') }}
 
-Values can be inserted without having to specify values for the column:
 
-=== "Core"
-
-    {{ load_snippet('autoIncrementUse','lib/snippets/dart_api/tables.dart.excerpt.json') }}
-
-=== "Manager"
-
-    {{ load_snippet('autoIncrementUseManager','lib/snippets/dart_api/tables.dart.excerpt.json') }}
-
-??? tip "Tip: Sharing common columns with mixins"
+!!! tip "Tip: Sharing common columns with mixins"
 
     You can extract common column definitions that you might need in multiple tables
     into Dart mixins:

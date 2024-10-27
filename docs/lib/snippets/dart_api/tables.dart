@@ -5,22 +5,23 @@ import 'package:drift/drift.dart';
 part 'tables.g.dart';
 
 // #docregion simple_schema
-class TodoItems extends Table {
+class TodoCategories extends Table {
   IntColumn get id => integer().autoIncrement()(); // (1)!
-  TextColumn get title => text()();
-  IntColumn get category =>
-      integer().nullable().references(TodoCategory, #id)();
-  DateTimeColumn get createdAt => dateTime().nullable()(); // (2)!
+  TextColumn get description => text()();
 }
 
-class TodoCategory extends Table {
+class TodoItems extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get description => text()();
+  TextColumn get title => text()();
+  DateTimeColumn get createdAt => dateTime().nullable()(); // (2)!
+
+  @ReferenceName('categories')
+  IntColumn get category => integer().references(TodoCategories, #id)();
 }
 // #enddocregion simple_schema
 
 // #docregion simple_schema_db
-@DriftDatabase(tables: [TodoItems, TodoCategory])
+@DriftDatabase(tables: [TodoItems, TodoCategories])
 class Database extends _$Database {
   Database(super.e);
 
