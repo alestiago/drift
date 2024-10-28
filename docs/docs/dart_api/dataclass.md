@@ -54,6 +54,7 @@ When serializing to json, the generated dataclass will use the column name in `s
 ### Custom json keys
 
 To use a custom name for JSON serialization, use the `@JsonKey` annotation.
+Note that the `@JsonKey` class from `package:drift` is not same as the `@JsonKey` annotation from `package:json_annotation`, and the two are not compatible with each other.
 
 **Example:**
 
